@@ -1,7 +1,10 @@
 package spotify
 
 import (
+	"bytes"
 	"crypto/tls"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -151,4 +154,32 @@ func (a Authenticator) NewClient(token *oauth2.Token) Client {
 	return Client{
 		http: client,
 	}
+}
+
+// NewClientFromCredentials creates a Client that follows Client Credentials authentication flow
+// https://developer.spotify.com/web-api/authorization-guide/#client-credentials-flow
+func (a Authenticator) NewClientFromCredentials() (Client, error) {
+
+	body := []byte("grant_type=client_credentials")
+	url := a.config.Endpoint.TokenURL
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+
+	data := []byte(a.config.ClientID + ":" + a.config.ClientSecret)
+	str := base64.StdEncoding.EncodeToString(data)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", "Basic "+str)
+
+	client := DefaultClient.http
+	resp, err := client.Do(req)
+	if err != nil {
+		return Client{http: nil}, err
+	}
+	defer resp.Body.Close()
+
+	token := &oauth2.Token{}
+	err = json.NewDecoder(resp.Body).Decode(&token)
+	if err != nil {
+		return Client{http: nil}, err
+	}
+	return a.NewClient(token), nil
 }
