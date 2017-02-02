@@ -95,6 +95,7 @@ func NewAuthenticator(redirectURL string, scopes ...string) Authenticator {
 	// disable HTTP/2 for DefaultClient, see: https://github.com/zmb3/spotify/issues/20
 	tr := &http.Transport{
 		TLSNextProto: map[string]func(authority string, c *tls.Conn) http.RoundTripper{},
+		Proxy:        http.ProxyFromEnvironment, //http.ProxyURL(proxyUrl),
 	}
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, &http.Client{Transport: tr})
 	return Authenticator{
