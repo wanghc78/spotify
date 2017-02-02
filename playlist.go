@@ -124,6 +124,25 @@ func (c *Client) FeaturedPlaylists() (message string, playlists *SimplePlaylistP
 	return c.FeaturedPlaylistsOpt(nil)
 }
 
+// GetPlaylistFromSimplePlaylist gets the playlist page with full PlaylistTrack data inside
+func (c *Client) GetPlaylistFromSimplePlaylist(simplePlaylist *SimplePlaylist) (playlistPage *PlaylistTrackPage, e error) {
+	url := simplePlaylist.Tracks.Endpoint
+	resp, err := c.http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, decodeError(resp.Body)
+	}
+
+	var result PlaylistTrackPage
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	return &result, err
+
+}
+
 // FollowPlaylist adds the current user as a follower of the specified
 // playlist.  Any playlist can be followed, regardless of its private/public
 // status, as long as you know the owner and playlist ID.
